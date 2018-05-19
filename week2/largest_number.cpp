@@ -15,7 +15,7 @@ string largest_number(vector<string> a) {
                  string const& rhs)
               { return lhs + rhs > rhs + lhs;
               });
-
+    
     std::stringstream ret;
     for (size_t i = 0; i < a.size(); i++) {
         ret << a[i];
@@ -34,3 +34,4 @@ int main() {
     }
     std::cout << largest_number(a);
 }
+
