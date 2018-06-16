@@ -1,119 +1,72 @@
 #include <iostream>
+#include <cassert>
+#include <string>
 #include <vector>
-#include <cstdlib>
+#include  <climits>
 
 using std::vector;
-using std::swap;
-void partition3(vector<int> &a, int l, int r,int& m1, int& m2) {
-   m1=l-1;
-   m2=r;
-   int cnt_m1 = l-1;
-   int cnt_m2 = r;
-   int v = a[r];
-   while (true) {
-      while (a[++m1] < v) {
-      }
-      while (a[--m2]>v) {
-         if (m2 == l)
-            break;
-      }
-      if (m1 >= m2) break;
-      swap(a[m1],a[m2]);
-      // Move all same left occurrence of pivot to beginning of
-      // array and keep count using p
-      if (a[m1] == v)
-      {
-         cnt_m1++;
-         swap(a[cnt_m1], a[m1]);
-      }
-      
-      // Move all same right occurrence of pivot to end of array
-      // and keep count using q
-      if (a[m2] == v)
-      {
-         cnt_m2--;
-         swap(a[m2], a[cnt_m2]);
-      }
+using std::string;
+using std::max;
+using std::min;
+
+long long eval(long long a, long long b, char op) {
+   if (op == '*') {
+      return a * b;
+   } else if (op == '+') {
+      return a + b;
+   } else if (op == '-') {
+      return a - b;
+   } else {
+      assert(0);
    }
-   
-   // Move pivot element to its correct index
-   swap(a[m1], a[r]);
-   
-   // Move all left same occurrences from beginning
-   // to adjacent to arr[i]
-   m2 = m1-1;
-   for (int k = l; k < cnt_m1; k++, m2--)
-      swap(a[k], a[m2]);
-   
-   // Move all right same occurrences from end
-   // to adjacent to arr[i]
-   m1 = m1+1;
-   for (int k = r-1; k > cnt_m2; k--, m1++)
-      swap(a[m1], a[k]);
-}
-void quick3_sort(vector<int> &a, int l, int r) {
-   if (l >= r) {
-      return;
-   }
- //  int k = l + rand() % (r - l + 1);
-  // swap(a[l], a[k]);
-   int m1,m2;
-   partition3(a, l, r, m1, m2);
-   
-   quick3_sort(a, l, m2);
-   quick3_sort(a, m1, r);
-}
-int partition2(vector<int> &a, int l, int r) {
-   int x = a[l];
-   int j = l;
-   for (int i = l + 1; i <= r; i++) {
-      if (a[i] <= x) {
-         j++;
-         swap(a[i], a[j]);
-      }
-   }
-   swap(a[l], a[j]);
-   return j;
-}
-int partition2_my(vector<int>&a, int l, int r) {
-   int x = a[l];
-   int big = l;
-   for (int i=l+1;i<=r; i++) {
-      if (a[i] <=x) {
-         big++;
-         swap(a[i],a[big]);
-      }
-   }
-   swap(a[l],a[big]);
-   return big;
-   
 }
 
-void randomized_quick_sort(vector<int> &a, int l, int r) {
-   if (l >= r) {
-      return;
+long long get_maximum_value(const string &exp) {
+   int length = exp.size();
+   int numOfnum = (length + 1) / 2;
+   long long minArray[numOfnum][numOfnum];
+   long long maxArray[numOfnum][numOfnum];
+   for (int i =0 ; i<numOfnum; i++) {
+      for (int j =0; j < numOfnum; j++) {
+         minArray[i][j] =0;
+         maxArray[i][j] = 0;
+      }
+   }
+   for (int i = 0; i < numOfnum; i++)
+   {
+      //The values on the main diagonal is just the number themselves
+      minArray[i][i] = std::stoll(exp.substr(2*i,1));
+      maxArray[i][i] = std::stoll(exp.substr(2*i,1));
+   }
+   for (int s = 0; s < numOfnum - 1; s++)
+   {
+      for (int i = 0; i < numOfnum - s - 1; i++)
+      {
+         int j = i + s + 1;
+         long long minVal = LLONG_MAX;
+         long long maxVal = LLONG_MIN;
+         // find the minimum and maximum values for the expression
+         // between the ith number and jth number
+         for (int k = i; k < j; k++ )
+         {
+            long long a = eval(minArray[i][k],minArray[k + 1][j],exp[2 * k + 1]);
+            long long b = eval(minArray[i][k],maxArray[k + 1][j],exp[2 * k + 1]);
+            long long c = eval(maxArray[i][k],minArray[k + 1][j],exp[2 * k + 1]);
+            long long d = eval(maxArray[i][k],maxArray[k + 1][j],exp[2 * k + 1]);
+            minVal = min(minVal,min(a,min(b,min(c,d))));
+            maxVal = max(maxVal,max(a,max(b,max(c,d))));
+         }
+         minArray[i][j] = minVal;
+         maxArray[i][j] = maxVal;
+      }
    }
    
-   int k = l + rand() % (r - l + 1);
-   swap(a[l], a[k]);
-   int m = partition2(a, l, r);
-   
-   randomized_quick_sort(a, l, m - 1);
-   randomized_quick_sort(a, m + 1, r);
+   return maxArray[0][numOfnum - 1];
+   return 0;
 }
 
 int main() {
-   int n;
-   std::cin >> n;
-   vector<int> a(n);
-   for (size_t i = 0; i < a.size(); ++i) {
-      std::cin >> a[i];
-   }
-   
-   //   randomized_quick_sort(a, 0, a.size() - 1);
-   quick3_sort(a, 0 , a.size()-1);
-   for (size_t i = 0; i < a.size(); ++i) {
-      std::cout << a[i] << ' ';
-   }
+   string s;
+   std::cin >> s;
+   std::cout << get_maximum_value(s) << '\n';
 }
-
