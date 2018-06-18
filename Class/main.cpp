@@ -1,72 +1,90 @@
+#include <algorithm>
 #include <iostream>
-#include <cassert>
-#include <string>
+#include <sstream>
+#include <iomanip>
 #include <vector>
-#include  <climits>
+#include <string>
+#include <cmath>
+#include <cfloat>
 
 using std::vector;
 using std::string;
-using std::max;
+using std::pair;
 using std::min;
+struct Point {
+   int x,y;
+   Point(){ x=0;y=0;}
+   Point(int x ,int y) :x(x),y(y){};
+};
 
-long long eval(long long a, long long b, char op) {
-   if (op == '*') {
-      return a * b;
-   } else if (op == '+') {
-      return a + b;
-   } else if (op == '-') {
-      return a - b;
-   } else {
-      assert(0);
-   }
+//A utility function to find the distance between two points
+double dist(Point p1, Point p2)
+{
+   return sqrt( (p1.x - p2.x)*(p1.x - p2.x) +
+               (p1.y - p2.y)*(p1.y - p2.y)
+               );
 }
 
-long long get_maximum_value(const string &exp) {
-   int length = exp.size();
-   int numOfnum = (length + 1) / 2;
-   long long minArray[numOfnum][numOfnum];
-   long long maxArray[numOfnum][numOfnum];
-   for (int i =0 ; i<numOfnum; i++) {
-      for (int j =0; j < numOfnum; j++) {
-         minArray[i][j] =0;
-         maxArray[i][j] = 0;
+// A Brute Force method to return the smallest distance between two points
+// in P[] of size n
+double bruteForce(vector<Point> points,int l,int r)
+{
+   float min = DBL_MAX;
+   for (int i = l; i <r-l; ++i)
+      for (int j = i+1; j < r-l; ++j)
+         if (dist(points[i], points[j]) < min)
+            min = dist(points[i], points[j]);
+   return min;
+}
+double closest(vector<Point> points,int l,int r) {
+   if (r-l <=3) {
+      return bruteForce(points,l,r);
+   }
+   // Find the middle point
+   int mid = (r-l)/2;
+   double dl = closest(points,l,mid);
+   double dr = closest(points,mid,r-l);
+   double d = min(dl,dr);
+   vector<Point> strip(r-l);
+   int j = 0;
+   for (int i = 0; i < r-l; i++) {
+      if (abs(points[i].x - points[mid].x) < d) {
+         strip[j] = points[i];
+         j++;
       }
    }
-   for (int i = 0; i < numOfnum; i++)
-   {
-      //The values on the main diagonal is just the number themselves
-      minArray[i][i] = std::stoll(exp.substr(2*i,1));
-      maxArray[i][i] = std::stoll(exp.substr(2*i,1));
-   }
-   for (int s = 0; s < numOfnum - 1; s++)
-   {
-      for (int i = 0; i < numOfnum - s - 1; i++)
-      {
-         int j = i + s + 1;
-         long long minVal = LLONG_MAX;
-         long long maxVal = LLONG_MIN;
-         // find the minimum and maximum values for the expression
-         // between the ith number and jth number
-         for (int k = i; k < j; k++ )
-         {
-            long long a = eval(minArray[i][k],minArray[k + 1][j],exp[2 * k + 1]);
-            long long b = eval(minArray[i][k],maxArray[k + 1][j],exp[2 * k + 1]);
-            long long c = eval(maxArray[i][k],minArray[k + 1][j],exp[2 * k + 1]);
-            long long d = eval(maxArray[i][k],maxArray[k + 1][j],exp[2 * k + 1]);
-            minVal = min(minVal,min(a,min(b,min(c,d))));
-            maxVal = max(maxVal,max(a,max(b,max(c,d))));
-         }
-         minArray[i][j] = minVal;
-         maxArray[i][j] = maxVal;
-      }
-   }
+   std::sort(strip.begin(),strip.end(),[](Point const&  rhs,Point const&  lhs)
+             { return lhs.y>rhs.y;});
+   double min = d;
+   for (int i = 0; i < j; ++i)
+      for (int k = i+1; k < r-l && (strip[k].y - strip[i].y) < min; ++k)
+         if (dist(strip[i],strip[k]) < min)
+            min = dist(strip[i], strip[k]);
    
-   return maxArray[0][numOfnum - 1];
-   return 0;
+   if (d <min) return d;
+   else return min;
+
+}
+double minimal_distance(vector<int> x, vector<int> y) {
+   vector<Point> points;
+   points.resize(x.size());
+   for (int i=0; i<=(x.size()-1); i++) {
+      points[i] = Point(x[i],y[i]);
+   }
+   std::sort(points.begin(),points.end(),[](Point const&  rhs,Point const&  lhs)
+             { return lhs.x>rhs.x;});
+
+   return closest(points,0,x.size());
 }
 
 int main() {
-   string s;
-   std::cin >> s;
-   std::cout << get_maximum_value(s) << '\n';
+   size_t n;
+   std::cin >> n;
+   vector<int> x(n);
+   vector<int> y(n);
+   for (size_t i = 0; i < n; i++) {
+      std::cin >> x[i] >> y[i];
+   }
+   std::cout << std::fixed;
+   std::cout << std::setprecision(9) << minimal_distance(x, y) << "\n";
 }

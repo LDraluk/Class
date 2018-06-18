@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <algorithm>
 
 using std::vector;
 using std::swap;
@@ -76,7 +77,29 @@ void merge_sort(vector<T> &a, int l, int r) {
     }
     
 }
-
+template<typename T>
+void bubble_sort(vector<T> &a, int n) {
+    for (int i=0; i<n-1; i++) {
+        for (int j=0; j<n-i-1; j++) {
+            if (a[j] > a[j+1]) {
+                swap(a[j],a[j+1]);
+            }
+        }
+    }
+}
+template <typename T>
+void select_sort(vector<T> &a, int n) {
+    int min_idx = 0;
+    for (int i=0; i<n-1;i++) {
+        min_idx = i;
+        for (int j=i+1; j< n; j++) {
+            if (a[j] < a[min_idx]) {
+                min_idx = j;
+            }
+        }
+        swap(a[i],a[min_idx]);
+    }
+}
 int main() {
     int n;
     std::cin >> n;
@@ -85,7 +108,8 @@ int main() {
         std::cin >> a[i];
     }
     //    randomized_quick_sort(a, 0, a.size() - 1);
-    merge_sort(a, 0, a.size() - 1);
+    //   merge_sort(a, 0, a.size() - 1);
+    bubble_sort(a, n);
     for (size_t i = 0; i < a.size(); ++i) {
         std::cout << a[i] << ' ';
     }
