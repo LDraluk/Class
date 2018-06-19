@@ -1,90 +1,92 @@
-#include <algorithm>
 #include <iostream>
-#include <sstream>
-#include <iomanip>
+#include <queue>
 #include <vector>
-#include <string>
-#include <cmath>
-#include <cfloat>
 
-using std::vector;
-using std::string;
-using std::pair;
-using std::min;
-struct Point {
-   int x,y;
-   Point(){ x=0;y=0;}
-   Point(int x ,int y) :x(x),y(y){};
+struct Request {
+   Request(int arrival_time, int process_time):
+   arrival_time(arrival_time),
+   process_time(process_time)
+   {}
+   
+   int arrival_time;
+   int process_time;
 };
 
-//A utility function to find the distance between two points
-double dist(Point p1, Point p2)
-{
-   return sqrt( (p1.x - p2.x)*(p1.x - p2.x) +
-               (p1.y - p2.y)*(p1.y - p2.y)
-               );
-}
-
-// A Brute Force method to return the smallest distance between two points
-// in P[] of size n
-double bruteForce(vector<Point> points,int l,int r)
-{
-   float min = DBL_MAX;
-   for (int i = l; i <r-l; ++i)
-      for (int j = i+1; j < r-l; ++j)
-         if (dist(points[i], points[j]) < min)
-            min = dist(points[i], points[j]);
-   return min;
-}
-double closest(vector<Point> points,int l,int r) {
-   if (r-l <=3) {
-      return bruteForce(points,l,r);
-   }
-   // Find the middle point
-   int mid = (r-l)/2;
-   double dl = closest(points,l,mid);
-   double dr = closest(points,mid,r-l);
-   double d = min(dl,dr);
-   vector<Point> strip(r-l);
-   int j = 0;
-   for (int i = 0; i < r-l; i++) {
-      if (abs(points[i].x - points[mid].x) < d) {
-         strip[j] = points[i];
-         j++;
-      }
-   }
-   std::sort(strip.begin(),strip.end(),[](Point const&  rhs,Point const&  lhs)
-             { return lhs.y>rhs.y;});
-   double min = d;
-   for (int i = 0; i < j; ++i)
-      for (int k = i+1; k < r-l && (strip[k].y - strip[i].y) < min; ++k)
-         if (dist(strip[i],strip[k]) < min)
-            min = dist(strip[i], strip[k]);
+struct Response {
+   Response(bool dropped, int start_time):
+   dropped(dropped),
+   start_time(start_time)
+   {}
    
-   if (d <min) return d;
-   else return min;
+   bool dropped;
+   int start_time;
+};
 
-}
-double minimal_distance(vector<int> x, vector<int> y) {
-   vector<Point> points;
-   points.resize(x.size());
-   for (int i=0; i<=(x.size()-1); i++) {
-      points[i] = Point(x[i],y[i]);
+class Buffer {
+public:
+   Buffer(int size):
+   size_(size),
+   finish_time_()
+   {}
+   
+   Response Process(const Request &request) {
+      // write your code here
+      while (!finish_time_.empty()) {
+         if (finish_time_.front() <= request.arrival_time)
+            finish_time_.pop();
+         else
+            break;
+      }
+      
+      if (finish_time_.size() == size_)
+         return Response(true, -1);
+      
+      if (finish_time_.empty()){
+         finish_time_.push(request.arrival_time + request.process_time);
+         return Response(false, request.arrival_time);
+      }
+      
+      int last_element = finish_time_.back();
+      finish_time_.push(last_element + request.process_time);
+      return Response(false, last_element);
    }
-   std::sort(points.begin(),points.end(),[](Point const&  rhs,Point const&  lhs)
-             { return lhs.x>rhs.x;});
+private:
+   int size_;
+   std::queue <int> finish_time_;
+};
 
-   return closest(points,0,x.size());
+std::vector <Request> ReadRequests() {
+   std::vector <Request> requests;
+   int count;
+   std::cin >> count;
+   for (int i = 0; i < count; ++i) {
+      int arrival_time, process_time;
+      std::cin >> arrival_time >> process_time;
+      requests.push_back(Request(arrival_time, process_time));
+   }
+   return requests;
+}
+
+std::vector <Response> ProcessRequests(const std::vector <Request> &requests, Buffer *buffer) {
+   std::vector <Response> responses;
+   for (int i = 0; i < requests.size(); ++i)
+      responses.push_back(buffer->Process(requests[i]));
+   return responses;
+}
+
+void PrintResponses(const std::vector <Response> &responses) {
+   for (int i = 0; i < responses.size(); ++i)
+      std::cout << (responses[i].dropped ? -1 : responses[i].start_time) << std::endl;
 }
 
 int main() {
-   size_t n;
-   std::cin >> n;
-   vector<int> x(n);
-   vector<int> y(n);
-   for (size_t i = 0; i < n; i++) {
-      std::cin >> x[i] >> y[i];
-   }
-   std::cout << std::fixed;
-   std::cout << std::setprecision(9) << minimal_distance(x, y) << "\n";
+   int size;
+   std::cin >> size;
+   std::vector <Request> requests = ReadRequests();
+   
+   Buffer buffer(size);
+   std::vector <Response> responses = ProcessRequests(requests, &buffer);
+   
+   PrintResponses(responses);
+   return 0;
 }
