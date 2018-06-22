@@ -1,92 +1,91 @@
 #include <iostream>
-#include <queue>
+#include <string>
 #include <vector>
 
-struct Request {
-   Request(int arrival_time, int process_time):
-   arrival_time(arrival_time),
-   process_time(process_time)
-   {}
-   
-   int arrival_time;
-   int process_time;
+using std::string;
+typedef unsigned long long ull;
+
+struct Data {
+   string pattern, text;
 };
 
-struct Response {
-   Response(bool dropped, int start_time):
-   dropped(dropped),
-   start_time(start_time)
-   {}
-   
-   bool dropped;
-   int start_time;
-};
+Data read_input() {
+   Data data;
+   std::cin >> data.pattern >> data.text;
+   return data;
+}
 
-class Buffer {
-public:
-   Buffer(int size):
-   size_(size),
-   finish_time_()
-   {}
-   
-   Response Process(const Request &request) {
-      // write your code here
-      while (!finish_time_.empty()) {
-         if (finish_time_.front() <= request.arrival_time)
-            finish_time_.pop();
-         else
-            break;
+void print_occurrences(const std::vector<int> &output) {
+   for (size_t i = 0; i < output.size(); ++i)
+      std::cout << output[i] << " ";
+   std::cout << "\n";
+}
+unsigned long long hash_func(const string &s, const int &prime,
+                             const int &multiplier) { //多项式哈希
+   // static const size_t multiplier = 263;
+   // static const size_t prime = 1000000007;
+   unsigned long long hash = 0;
+   for (int i = static_cast<int>(s.size()) - 1; i >= 0; --i)
+      hash = (hash * multiplier + s[i]) % prime;
+   return hash;
+}
+
+std::vector<long long> PrecomputeHashes(const string &T, const size_t &lenP,
+                                        const int &p, const int &x) {
+   size_t lenT = T.size();
+   std::vector<long long> H(lenT - lenP + 1);
+   /*
+    25−36=18446744073709551605 instead of −11, because this is unsigned type.
+    It means that the result of operations is taken modulo
+    2^64 before being taken modulo p , and this changes everything,
+    and hash values of equal strings become different*/
+   string S = T.substr(lenT - lenP);
+   H[lenT - lenP] = hash_func(S, p, x);
+   long long y = 1;
+   for (size_t i = 1; i <= lenP; i++)
+      y = (y * x) % p; // y为int 可能溢出
+   for (int i = lenT - lenP - 1; i >= 0; --i)
+      H[i] =
+      ((x * H[i + 1] + T[i] - y * T[i + lenP]) % p + p) %
+      p;
+   return H;
+}
+bool AreEqual(const string &T, const string &P, const size_t &start) {
+   for (size_t i = start; i <= start + P.size() - 1; ++i) {
+      if (T[i] != P[i - start]) {
+         return false;
       }
-      
-      if (finish_time_.size() == size_)
-         return Response(true, -1);
-      
-      if (finish_time_.empty()){
-         finish_time_.push(request.arrival_time + request.process_time);
-         return Response(false, request.arrival_time);
-      }
-      
-      int last_element = finish_time_.back();
-      finish_time_.push(last_element + request.process_time);
-      return Response(false, last_element);
    }
-private:
-   int size_;
-   std::queue <int> finish_time_;
-};
+   return true;
+}
 
-std::vector <Request> ReadRequests() {
-   std::vector <Request> requests;
-   int count;
-   std::cin >> count;
-   for (int i = 0; i < count; ++i) {
-      int arrival_time, process_time;
-      std::cin >> arrival_time >> process_time;
-      requests.push_back(Request(arrival_time, process_time));
+std::vector<int> RabinKarp(const Data &input) {
+   const string &T = input.text;
+   const string &P = input.pattern;
+   int p = int(1e9) + 7;
+   int x = rand() % (p - 1) + 1;
+   std::vector<int> result;
+   unsigned long long pHash = hash_func(P, p, x);
+   std::vector<long long> H = PrecomputeHashes(T, P.size(), p, x);
+   for (size_t i = 0; i <= T.size() - P.size(); ++i) {
+      if (pHash != H[i])
+         continue;
+      if (AreEqual(T, P, i))
+         result.push_back(i);
    }
-   return requests;
+   return result;
 }
-
-std::vector <Response> ProcessRequests(const std::vector <Request> &requests, Buffer *buffer) {
-   std::vector <Response> responses;
-   for (int i = 0; i < requests.size(); ++i)
-      responses.push_back(buffer->Process(requests[i]));
-   return responses;
+std::vector<int> get_occurrences(const Data &input) {
+   const string &s = input.pattern, t = input.text;
+   std::vector<int> ans;
+   for (size_t i = 0; i + s.size() <= t.size(); ++i)
+      if (t.substr(i, s.size()) == s)
+         ans.push_back(i);
+   return ans;
 }
-
-void PrintResponses(const std::vector <Response> &responses) {
-   for (int i = 0; i < responses.size(); ++i)
-      std::cout << (responses[i].dropped ? -1 : responses[i].start_time) << std::endl;
-}
-
 int main() {
-   int size;
-   std::cin >> size;
-   std::vector <Request> requests = ReadRequests();
-   
-   Buffer buffer(size);
-   std::vector <Response> responses = ProcessRequests(requests, &buffer);
-   
-   PrintResponses(responses);
+   std::ios_base::sync_with_stdio(false);
+   // print_occurrences(get_occurrences(read_input()));
+   print_occurrences(RabinKarp(read_input()));
    return 0;
 }
