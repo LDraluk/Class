@@ -1,72 +1,68 @@
 #include <iostream>
-#include <algorithm>
 #include <vector>
-#include <stack>
+#include <queue>
 
 using std::vector;
-using std::stack;
-void dfs(vector<vector<int> > &adj, vector<int> &used, int x) {
-   used[x] = 1;
-   for (int i =0; i< adj[x].size(); i++) {
-      int y = adj[x][i];
-      if (!used[y]) {
-         dfs(adj,used,y);
-      }
-   }
-}
-void fill(vector<vector<int> > &adj, vector<int> &used, stack<int> &order, int x) {
-   used[x] = 1;
-   for (int i =0; i< adj[x].size(); i++) {
-      int y = adj[x][i];
-      if (!used[y]) {
-         fill(adj,used,order,y);
-      }
-   }
-   order.push(x);
-}
-vector<vector<int> >  transpose(vector<vector<int> >& adj) {
-   vector<vector<int> > reverse(adj.size(), vector<int>());
-   for (int v =0; v<adj.size(); v++) {
-      for (int i =0; i< adj[v].size();i++) {
-         reverse[adj[v][i]].push_back(v);
-      }
-   }
-   return reverse;
-}
-int number_of_strongly_connected_components(vector<vector<int> > adj) {
-   int result = 0;
-   vector<int> used(adj.size(), 0);
-   stack<int> order;
-   for (int i=0; i<adj.size(); i++) {
-      if (!used[i]) {
-         fill(adj,used,order,i);
-      }
-   }
-   vector<vector<int> > reverse = transpose(adj);
-   for (int i=0; i < used.size();i++) {
-      used[i] = 0;
-   }
-   while (!order.empty()) {
-      int v = order.top();
-      order.pop();
-      if (!used[v]) {
-         result +=1;
-         dfs(reverse,used,v);
-      }
-   }
-   
+using std::queue;
 
-   return result;
+int distance(vector<vector<int> > &adj, int s, int t) {
+   vector<int> distance(adj.size(),-1);
+   queue<int> q;
+   distance[s] = 0;
+   q.push(s);
+   while (!q.empty()) {
+      auto v = q.front();
+      if (v==t) {
+         return distance[v];
+      }
+      q.pop();
+      for (int i=0; i<adj[v].size(); i++) {
+         auto u = adj[v][i];
+         if (distance[u] == -1) {
+            q.push(u);
+            distance[u] = distance[v]+1;
+            
+         }
+      }
+   }
+   return -1;
 }
-
+int bipartite(vector<vector<int> > &adj) {
+   vector<int> color(adj.size(),-1);
+   queue<int> q;
+    color[0] = 1;
+   q.push(0);
+   while (!q.empty()) {
+      auto v = q.front();
+      q.pop();
+      for (int i=0; i<adj[v].size(); i++) {
+         auto u = adj[v][i];
+         if (color[u] == -1) {
+            q.push(u);
+            color[u] = 1 - color[v];
+         }
+         if (color[u] == color[v]) {
+            return 0;
+         }
+      }
+   }
+  return 1;
+}
 int main() {
-   size_t n, m;
+   int n, m;
    std::cin >> n >> m;
    vector<vector<int> > adj(n, vector<int>());
-   for (size_t i = 0; i < m; i++) {
+   for (int i = 0; i < m; i++) {
       int x, y;
       std::cin >> x >> y;
       adj[x - 1].push_back(y - 1);
+      adj[y - 1].push_back(x - 1);
    }
-   std::cout << number_of_strongly_connected_components(adj);
+/*   int s, t;
+   std::cin >> s >> t;
+   s--;
+   t--;
+   std::cout << distance(adj, s, t);
+ */
+   std::cout << bipartite(adj);
 }
